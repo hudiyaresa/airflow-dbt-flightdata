@@ -51,7 +51,7 @@ flights-data-pipeline/
 │
 ├── dags/
 │   └── flights_data_pipeline/
-│       ├── components/
+│       ├── tasks/
 │       │   ├── extract.py
 │       │   └── load.py
 │       │   └── transform.py

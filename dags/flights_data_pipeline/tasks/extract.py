@@ -4,11 +4,13 @@ from helper.minio import CustomMinio
 import logging
 import pandas as pd
 import json
+from airflow.models import Variable
+from datetime import timedelta
 
 
 class Extract:
     @staticmethod
-    def _pacflight_db(table_name, **kwargs):
+    def _pacflight_db(table_name, incremental, **kwargs):
         """
         Extract all data from Pacflight database (non-incremental).
 
@@ -26,8 +28,17 @@ class Extract:
             connection = pg_hook.get_conn()
             cursor = connection.cursor()
 
-            query = f"SELECT * FROM bookings.{table_name};"
-            object_name = f'/temp/{table_name}.csv'
+            query = ""
+            if incremental:
+                date = kwargs['ds']
+                query = f"""
+                    SELECT * FROM bookings.{table_name}
+                    WHERE created_at::DATE = '{date}'::DATE - INTERVAL '1 DAY';
+                """
+                object_name = f'/temp/{table_name}-{(pd.to_datetime(date) - timedelta(days=1)).strftime("%Y-%m-%d")}.csv'
+            else:
+                query = f"SELECT * FROM bookings.{table_name};"
+                object_name = f'/temp/{table_name}.csv'
 
             logging.info(f"[Extract] Executing query: {query}")
             cursor.execute(query)
@@ -64,10 +75,12 @@ class Extract:
 
             CustomMinio._put_csv(df, bucket_name, object_name)
             logging.info(f"[Extract] Extraction completed for table: {table_name}")
+            return {"status": "success", "data_date": str(kwargs['ds'])}            
 
         except AirflowSkipException as e:
             logging.warning(f"[Extract] Skipped extraction for {table_name}: {str(e)}")
-            raise e
+            return {"status": "skipped", "data_date": str(kwargs['ds'])}            
+        
         except Exception as e:
             logging.error(f"[Extract] Failed extracting {table_name}: {str(e)}")
             raise AirflowException(f"Error when extracting {table_name} : {str(e)}")

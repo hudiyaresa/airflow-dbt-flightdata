@@ -58,7 +58,7 @@ services:
       POSTGRES_PASSWORD: ${PACFLIGHT_DB_PASSWORD}
       POSTGRES_DB: ${PACFLIGHT_DB_NAME}
     ports:
-      - 5433:5432
+      - 5436:5432
     networks:
       - airflow-networks
     volumes:

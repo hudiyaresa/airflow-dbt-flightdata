@@ -1,0 +1,45 @@
+minio:
+  conn_type: aws
+  description: ''
+  extra: '{"endpoint_url": "minio:9000"}'
+  host: ''
+  login: minio
+  password: your-sample-password
+  port: null
+  schema: ''
+pacflight_db:
+  conn_type: postgres
+  description: source database
+  extra: ''
+  host: pacflight_db
+  login: postgres
+  password: your-sample-password
+  port: 5432
+  schema: pacflight
+slack_notifier:
+  conn_type: slack
+  description: ''
+  extra: '{"timeout": null}'
+  host: ''
+  login: admin
+  password: your-sample-password
+  port: null
+  schema: ''
+slack_webhook:
+  conn_type: http
+  description: ''
+  extra: ''
+  host: ''
+  login: ''
+  password: your-password-web-hook
+  port: null
+  schema: ''
+warehouse_pacflight:
+  conn_type: postgres
+  description: warehouse database
+  extra: ''
+  host: warehouse_pacflight
+  login: postgres
+  password: your-sample-password
+  port: 5432
+  schema: warehouse_pacflight
