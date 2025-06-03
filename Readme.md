@@ -224,9 +224,9 @@ To receive task failure notifications in Slack:
 | ---------------------------------------- |
 | ![List DAG](docs/list_dag_available.png) | 
 
-<!-- | Task List                             |
+| Task List (Example skip exceptions)   |
 | ------------------------------------- |
-| ![List Tasks](docs/list_task_dag.png) | -->
+| ![List Tasks](docs/list_task_dag.png) |
 
 ### 4. Querying Final Warehouse
 
