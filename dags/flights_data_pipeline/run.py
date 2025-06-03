@@ -63,9 +63,11 @@ def transform_group(transform_tables):
     for table in transform_tables:
         transform = Transform.build_operator(
             task_id=f"{table}",
-            table_name=table,
+            table_name=table,            
             sql_dir="flights_data_pipeline/query/final"
         )
+
+        transform.trigger_rule = 'none_failed'
 
         if previous:
             previous >> transform
