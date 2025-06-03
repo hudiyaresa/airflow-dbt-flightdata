@@ -22,7 +22,7 @@ This version is improvements that supports incremental data loading, Jinja templ
 
 | Feature                  | Description                                                        |
 | ------------------------ | ------------------------------------------------------------------ |
-| Incremental Mode         | Controlled via `load_mode` variable (`incremental` or `full`)      |
+| Incremental Mode         | Controlled via `load_mode` incremental variable (`true` or `false`)|
 | Jinja Templating         | Dynamic query generation using Airflow’s `{{ ds }}` execution date |
 | XComs                    | Pass file metadata from Extract → Load                             |
 | Pangres Upsert           | UPSERT data using `pangres` with conflict handling                 |
@@ -182,6 +182,8 @@ airflow variables import includes/variables.json
 ```bash
 airflow connections import includes/connections.yaml
 ```
+
+make sure to set you credentials in connections (password, secret key, etc)
 
 
 ### Slack Notification Setup
