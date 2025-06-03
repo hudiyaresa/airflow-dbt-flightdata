@@ -56,15 +56,15 @@ class Extract:
                 raise AirflowSkipException(f"{table_name} has no data. Skipped...")
 
             # === Handle JSON columns that need to be dumped as string ===
-            if table_name == 'aircrafts_data':
-                df['model'] = df['model'].apply(json.dumps)
+            # if table_name == 'aircrafts_data':
+            #     df['model'] = df['model'].apply(json.dumps)
 
-            if table_name == 'airports_data':
-                df['airport_name'] = df['airport_name'].apply(json.dumps)
-                df['city'] = df['city'].apply(json.dumps)
+            # if table_name == 'airports_data':
+            #     df['airport_name'] = df['airport_name'].apply(json.dumps)
+            #     df['city'] = df['city'].apply(json.dumps)
 
-            if table_name == 'tickets':
-                df['contact_data'] = df['contact_data'].apply(lambda x: json.dumps(x) if x else None)
+            # if table_name == 'tickets':
+            #     df['contact_data'] = df['contact_data'].apply(lambda x: json.dumps(x) if x else None)
 
             # === Replace NaN with None for better compatibility with CSV ===
             if table_name == 'flights':

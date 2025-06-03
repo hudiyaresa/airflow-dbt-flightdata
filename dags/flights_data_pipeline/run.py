@@ -32,6 +32,12 @@ def load_group(tables_with_pkey):
     incremental = Variable.get("incremental").lower() == "true"
     load_tasks = []
 
+    # Debugging - log tables_with_pkey untuk memastikan format
+    # print(f"Tables with Pkey: {tables_with_pkey}")
+    
+    # tables_with_pkey = eval(tables_with_pkey) if isinstance(tables_with_pkey, str) else tables_with_pkey
+    # print(f"Evaluated Tables with Pkey: {tables_with_pkey}")
+
     for table, pkey in tables_with_pkey.items():
         task = PythonOperator(
             task_id=f"{table}",
@@ -39,10 +45,11 @@ def load_group(tables_with_pkey):
             op_kwargs={
                 'table_name': table,
                 'incremental': incremental,
-                'table_pkey': pkey
+                'table_pkey': tables_with_pkey
             },
             provide_context=True            
         )
+        load_tasks.append(task)
 
     # Set sequential load due to FK dependencies
     for i in range(1, len(load_tasks)):
@@ -73,12 +80,13 @@ def transform_group(transform_tables):
     schedule_interval='@daily',
     catchup=True,
     max_active_runs=1,
+    default_args=default_args,    
     tags=['pacflight', 'ETL']
 )
 def flights_data_pipeline():
 
-    tables_to_extract = Variable.get("tables_to_extract", deserialize_json=True)
-    tables_to_load = Variable.get("tables_to_load", deserialize_json=True)
+    tables_to_extract = eval(Variable.get("tables_to_extract"))
+    tables_to_load = eval(Variable.get("tables_to_load"))
 
     transform_tables = [
         'dim_aircraft', 'dim_airport', 'dim_seat', 'dim_passenger',

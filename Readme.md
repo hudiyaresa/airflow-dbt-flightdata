@@ -7,15 +7,30 @@
 2. [Architecture](#architecture)  
 3. [Pipeline Flow](#pipeline-flow)  
 4. [Project Structure](#project-structure)  
-5. [Environment Setup](#environment-setup)  
-6. [How to Run the Pipeline](#how-to-run-the-pipeline)  
+5. [How to Run the Pipeline](#how-to-run-the-pipeline)  
+6. [Environment Setup](#environment-setup)  
 7. [Screenshots](#screenshots)  
-8. [License](#license)
 
----
+
 
 ## Overview
 This project builds an orchestrated data pipeline for a flight booking system using Apache Airflow. It extracts data from a source PostgreSQL DB, stores it in MinIO, loads it into a warehouse, and transforms it into analytical tables.
+
+This version is improvements that supports incremental data loading, Jinja templating, XComs communication, Slack alerting, dynamic task creation, and modular configuration using CLI.
+
+### Improvement Pipeline Features
+
+| Feature                  | Description                                                        |
+| ------------------------ | ------------------------------------------------------------------ |
+| Incremental Mode         | Controlled via `load_mode` variable (`incremental` or `full`)      |
+| Jinja Templating         | Dynamic query generation using Airflow’s `{{ ds }}` execution date |
+| XComs                    | Pass file metadata from Extract → Load                             |
+| Pangres Upsert           | UPSERT data using `pangres` with conflict handling                 |
+| Skip Exceptions          | Gracefully skip load if CSV file is empty                          |
+| Slack Notifier           | Notifies a Slack channel on task failure                           |
+| CLI Config for Variables | Load `variables.json` and `connections.yaml` using Airflow CLI     |
+
+---
 
 
 ## Architecture
@@ -24,6 +39,7 @@ This project builds an orchestrated data pipeline for a flight booking system us
 - **Data Lake**: MinIO (`extracted-data` bucket)
 - **Data Warehouse**: PostgreSQL (`warehouse` schema)
 - **Orchestrator**: Apache Airflow
+- **Notifier**: Slack Webhook on task failure 
 - **Docker**: All services are containerized using Docker Compose
 
 ```text
@@ -55,8 +71,7 @@ flights-data-pipeline/
 │       │   ├── extract.py
 │       │   └── load.py
 │       │   └── transform.py
-│       ├── query/stg/         ← full load SQL per table
-│       └── models/            ← transformation SQL for data mart
+│       └── query/final/            ← transformation SQL for data warehouse
 │
 ├── helper/
 │   └── minio.py
@@ -69,12 +84,41 @@ flights-data-pipeline/
 │   ├── transform_group.png
 │   ├── list_dag_available.png
 │   ├── list_task_dag.png
-│   └── example_query_from_final_dwh.png
+│   ├── example_query_from_final_dwh.png
+│   └── slack_notifications.png
 │
 ├── .env                      ← Environment variables
 ├── docker-compose.yml
 └── README.md
 ```
+
+---
+
+
+## How to Run the Pipeline
+
+Clone and enter project
+```bash
+git clone https://github.com/hudiyaresa/flights-data-pipeline.git
+```
+
+```bash
+cd flights-data-pipeline
+```
+
+Start services
+```bash
+docker-compose up --build
+```
+
+### Access UI
+
+| Service       | URL                                            |
+| ------------- | ---------------------------------------------- |
+| Airflow UI    | [http://localhost:8080](http://localhost:8080) |
+| MinIO Browser | [http://localhost:9001](http://localhost:9001) |
+| Postgres DB   | localhost:5432 (e.g., via DBeaver or pgAdmin)  |
+
 
 ---
 
@@ -117,51 +161,40 @@ Then copy it into your `.env`:
 AIRFLOW_FERNET_KEY=your_generated_fernet_key
 ```
 
-## Airflow Connection Setup
+## Load Variables and Connections via CLI
 
-Manually create these in the UI:
+```bash
+docker exec -it airflow_standalone bash
+```
 
-* `pacflight_db`: connection to source DB (PostgresDB)
-* `warehouse_pacflight`: connection to staging/warehouse (PostgresDB)
-* `minio`: connection with:
+```bash
+cd includes
+```
 
-  * Type: Amazon Web Service (S3)
-  * Extra:
+### Import Airflow Variables
 
-    ```json
-    {
-      "endpoint_url":"minio:9000",
-    }
-    ```
+```bash
+airflow variables import includes/variables.json
+```
+
+### Import Airflow Connections
+
+```bash
+airflow connections import includes/connections.yaml
+```
+
+
+### Slack Notification Setup
+
+To receive task failure notifications in Slack:
+
+1. Create a Slack webhook via Slack App → Incoming Webhooks
+2. Add the webhook URL into your `password` as `HTTP` connections
+3. Ensure your DAG uses Slack alert logic in its failure callbacks
+
 
 ---
 
-## How to Run the Pipeline
-
-Clone and enter project
-```bash
-git clone https://github.com/hudiyaresa/flights-data-pipeline.git
-```
-
-```bash
-cd flights-data-pipeline
-```
-
-Start services
-```bash
-docker-compose up --build
-```
-
-### Access UI
-
-| Service       | URL                                            |
-| ------------- | ---------------------------------------------- |
-| Airflow UI    | [http://localhost:8080](http://localhost:8080) |
-| MinIO Browser | [http://localhost:9001](http://localhost:9001) |
-| Postgres DB   | localhost:5432 (e.g., via DBeaver or pgAdmin)  |
-
-
----
 
 ## Screenshots
 
@@ -189,12 +222,18 @@ docker-compose up --build
 | ---------------------------------------- |
 | ![List DAG](docs/list_dag_available.png) | 
 
-| Task List                             |
+<!-- | Task List                             |
 | ------------------------------------- |
-| ![List Tasks](docs/list_task_dag.png) |
+| ![List Tasks](docs/list_task_dag.png) | -->
 
 ### 4. Querying Final Warehouse
 
 ![Query Sample](docs/example_query_from_final_dwh.png)
 
----
+### 5. Slack Notifications
+
+![Slack Notifications](docs/slack_notifications.png)
+
+### 6. Xcoms
+
+![Xcoms](docs/xcoms.png)

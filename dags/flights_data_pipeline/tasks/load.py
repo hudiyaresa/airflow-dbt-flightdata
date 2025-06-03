@@ -37,7 +37,8 @@ class Load:
             if df.empty:
                 raise AirflowSkipException(f"[Load] Skipping {table_name}: CSV is empty")
 
-            df = df.set_index(table_pkey)
+            # df = df.set_index(table_pkey)
+            df = df.set_index(table_pkey[table_name])
 
             upsert(
                 con=engine,
