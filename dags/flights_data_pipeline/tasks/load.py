@@ -20,8 +20,11 @@ class Load:
 
         # Cek hasil extract
         extract_result = ti.xcom_pull(task_ids=f"extract.{table_name}")
+        logging.info(f"[Load] Extract result for {table_name}: {extract_result}")
+
         if not extract_result or extract_result.get("status") != "success":
-            raise AirflowSkipException(f"[Load] Skipping {table_name} due to extract status: {extract_result}")
+            logging.info(f"[Load] Skipping {table_name} due to extract status: {extract_result}")
+            raise AirflowSkipException(f"[Load] Skipped {table_name} karena tidak ada data dari extract.")
 
         table_pkey = kwargs.get("table_pkey")
         object_date = (pd.to_datetime(date) - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -35,6 +38,8 @@ class Load:
             df = CustomMinio._get_dataframe(bucket_name, object_name)
 
             if df.empty:
+                logging.warning(f"[Load] Dataframe is empty for {table_name}. Skipping.")
+                ti.xcom_push(key="return_value", value={"status": "skipped", "data_date": date})                
                 raise AirflowSkipException(f"[Load] Skipping {table_name}: CSV is empty")
 
             # df = df.set_index(table_pkey)
@@ -49,6 +54,7 @@ class Load:
             )
 
             logging.info(f"[Load] Load success for {table_name}, {len(df)} records inserted/updated.")
+            ti.xcom_push(key="return_value", value={"status": "success", "data_date": date})            
 
         except AirflowSkipException as e:
             logging.warning(str(e))

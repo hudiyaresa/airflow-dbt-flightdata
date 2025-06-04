@@ -23,6 +23,10 @@ class Extract:
             AirflowSkipException: If no data is found.
         """
         logging.info(f"[Extract] Starting extraction for table: {table_name}")
+
+        ti = kwargs["ti"]
+        ds = kwargs["ds"]
+                
         try:
             pg_hook = PostgresHook(postgres_conn_id='pacflight_db')
             connection = pg_hook.get_conn()
@@ -33,7 +37,8 @@ class Extract:
                 date = kwargs['ds']
                 query = f"""
                     SELECT * FROM bookings.{table_name}
-                    WHERE created_at::DATE = '{date}'::DATE - INTERVAL '1 DAY';
+                    WHERE created_at::DATE = '{date}'::DATE - INTERVAL '1 DAY' 
+                    OR updated_at::DATE = '{date}'::DATE - INTERVAL '1 DAY' ;
                 """
                 object_name = f'/temp/{table_name}-{(pd.to_datetime(date) - timedelta(days=1)).strftime("%Y-%m-%d")}.csv'
             else:
@@ -52,8 +57,9 @@ class Extract:
             df = pd.DataFrame(result, columns=column_list)
 
             if df.empty:
-                logging.warning(f"[Extract] Table {table_name} is empty. Skipping...")                
-                raise AirflowSkipException(f"{table_name} has no data. Skipped...")
+                logging.warning(f"[Extract] Table {table_name} is empty. Skipping...")
+                ti.xcom_push(key="return_value", value={"status": "skipped", "data_date": ds})
+                raise AirflowSkipException(f"[Extract] Skipped {table_name} — no new data.")
 
             # === Handle JSON columns that need to be dumped as string ===
             if table_name == 'aircrafts_data':
@@ -72,14 +78,15 @@ class Extract:
 
             bucket_name = 'extracted-data'
             logging.info(f"[Extract] Writing data to MinIO bucket: {bucket_name}, object: {object_name}")
-
             CustomMinio._put_csv(df, bucket_name, object_name)
+
+            result = {"status": "success", "data_date": ds}            
             logging.info(f"[Extract] Extraction completed for table: {table_name}")
-            return {"status": "success", "data_date": str(kwargs['ds'])}            
+            return result            
 
         except AirflowSkipException as e:
             logging.warning(f"[Extract] Skipped extraction for {table_name}: {str(e)}")
-            return {"status": "skipped", "data_date": str(kwargs['ds'])}            
+            raise e           
         
         except Exception as e:
             logging.error(f"[Extract] Failed extracting {table_name}: {str(e)}")

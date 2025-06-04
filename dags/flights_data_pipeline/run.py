@@ -1,6 +1,7 @@
 from airflow.decorators import dag, task_group
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime
 from helper.callbacks.slack_notifier import slack_notifier
 from pendulum import datetime
@@ -47,7 +48,8 @@ def load_group(tables_with_pkey):
                 'incremental': incremental,
                 'table_pkey': tables_with_pkey
             },
-            provide_context=True            
+            provide_context=True,
+            trigger_rule=TriggerRule.NONE_FAILED                        
         )
         load_tasks.append(task)
 
@@ -67,7 +69,7 @@ def transform_group(transform_tables):
             sql_dir="flights_data_pipeline/query/final"
         )
 
-        transform.trigger_rule = 'none_failed'
+        transform.trigger_rule = TriggerRule.NONE_FAILED
 
         if previous:
             previous >> transform
