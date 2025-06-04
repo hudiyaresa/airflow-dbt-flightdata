@@ -99,7 +99,7 @@ flights-data-pipeline/
 
 Clone and enter project
 ```bash
-git clone https://github.com/hudiyaresa/flights-data-pipeline.git
+git clone https://github.com/hudiyaresa/airflow-incremental-flightdata.git
 ```
 
 ```bash
@@ -167,20 +167,16 @@ AIRFLOW_FERNET_KEY=your_generated_fernet_key
 docker exec -it airflow_standalone bash
 ```
 
-```bash
-cd includes
-```
-
 ### Import Airflow Variables
 
 ```bash
-airflow variables import includes/variables.json
+airflow variables import include/variables.json
 ```
 
 ### Import Airflow Connections
 
 ```bash
-airflow connections import includes/connections.yaml
+airflow connections import include/connections.yaml
 ```
 
 make sure to set you credentials in connections (password, secret key, etc)
