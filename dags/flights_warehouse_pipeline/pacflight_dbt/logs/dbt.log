@@ -1,0 +1,70 @@
+[0m22:12:07.029275 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e363c950>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e2239b80>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e2a00c50>]}
+
+
+============================== 22:12:07.037333 | f1d34f12-99af-47ff-a122-20d53a05b864 ==============================
+[0m22:12:07.037333 [info ] [MainThread]: Running with dbt=1.8.7
+[0m22:12:07.038879 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'write_json': 'True', 'log_cache_events': 'False', 'partial_parse': 'True', 'cache_selected_only': 'False', 'warn_error': 'None', 'version_check': 'True', 'debug': 'False', 'log_path': '/opt/airflow/dags/flights_warehouse_pipeline/pacflight_dbt/logs', 'fail_fast': 'False', 'profiles_dir': '.', 'use_colors': 'True', 'use_experimental_parser': 'False', 'empty': 'None', 'quiet': 'False', 'no_print': 'None', 'log_format': 'default', 'invocation_command': 'dbt debug --profiles-dir .', 'static_parser': 'True', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'target_path': 'None', 'introspect': 'True', 'send_anonymous_usage_stats': 'True'}
+[0m22:12:07.065085 [info ] [MainThread]: dbt version: 1.8.7
+[0m22:12:07.065915 [info ] [MainThread]: python version: 3.12.6
+[0m22:12:07.066625 [info ] [MainThread]: python path: /home/airflow/.local/bin/python
+[0m22:12:07.067339 [info ] [MainThread]: os info: Linux-5.15.153.1-microsoft-standard-WSL2-x86_64-with-glibc2.36
+[0m22:12:07.068548 [info ] [MainThread]: Using profiles dir at .
+[0m22:12:07.069602 [info ] [MainThread]: Using profiles.yml file at ./profiles.yml
+[0m22:12:07.072348 [info ] [MainThread]: Using dbt_project.yml file at /opt/airflow/dags/flights_warehouse_pipeline/pacflight_dbt/dbt_project.yml
+[0m22:12:07.200730 [info ] [MainThread]: Configuration:
+[0m22:12:07.202231 [info ] [MainThread]:   profiles.yml file [[31mERROR not found[0m]
+[0m22:12:07.203009 [info ] [MainThread]:   dbt_project.yml file [[32mOK found and valid[0m]
+[0m22:12:07.204124 [info ] [MainThread]: Required dependencies:
+[0m22:12:07.205257 [debug] [MainThread]: Executing "git --help"
+[0m22:12:07.208406 [info ] [MainThread]:  - git [[31mERROR[0m]
+
+[0m22:12:07.209445 [info ] [MainThread]: Connection test skipped since no profile was found
+[0m22:12:07.210511 [info ] [MainThread]: [31m2 checks failed:[0m
+[0m22:12:07.211692 [info ] [MainThread]: dbt looked for a profiles.yml file in ./profiles.yml, but did
+not find one. For more information on configuring your profile, consult the
+documentation:
+
+https://docs.getdbt.com/docs/configure-your-profile
+
+
+[0m22:12:07.212868 [info ] [MainThread]: Error from git --help: User does not have permissions for this command: "git"
+
+[0m22:12:07.214657 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_wall_clock_time": 0.30048007, "process_user_time": 2.740381, "process_kernel_time": 0.334345, "process_mem_max_rss": "104348", "process_in_blocks": "3344", "process_out_blocks": "2192", "command_success": false}
+[0m22:12:07.216136 [debug] [MainThread]: Command `dbt debug` failed at 22:12:07.215872 after 0.30 seconds
+[0m22:12:07.217229 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e2a49100>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e1af42c0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7fc2e1b25880>]}
+[0m22:12:07.218346 [debug] [MainThread]: Flushing usage events
+[0m10:36:08.998864 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b012715b0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b019c1b20>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b014d19a0>]}
+
+
+============================== 10:36:09.010391 | d652e295-fbe9-4977-a33f-72b64e7f5c36 ==============================
+[0m10:36:09.010391 [info ] [MainThread]: Running with dbt=1.8.7
+[0m10:36:09.011577 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'write_json': 'True', 'partial_parse': 'True', 'cache_selected_only': 'False', 'profiles_dir': '.', 'debug': 'False', 'version_check': 'True', 'log_path': '/opt/airflow/dags/flights_warehouse_pipeline/pacflight_dbt/logs', 'warn_error': 'None', 'fail_fast': 'False', 'use_colors': 'True', 'use_experimental_parser': 'False', 'empty': 'None', 'quiet': 'False', 'no_print': 'None', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'static_parser': 'True', 'introspect': 'True', 'invocation_command': 'dbt debug --profiles-dir .', 'target_path': 'None', 'log_format': 'default', 'send_anonymous_usage_stats': 'True'}
+[0m10:36:09.025190 [info ] [MainThread]: dbt version: 1.8.7
+[0m10:36:09.026290 [info ] [MainThread]: python version: 3.12.6
+[0m10:36:09.027318 [info ] [MainThread]: python path: /home/airflow/.local/bin/python
+[0m10:36:09.029552 [info ] [MainThread]: os info: Linux-5.15.153.1-microsoft-standard-WSL2-x86_64-with-glibc2.36
+[0m10:36:09.030758 [info ] [MainThread]: Using profiles dir at .
+[0m10:36:09.031707 [info ] [MainThread]: Using profiles.yml file at ./profiles.yml
+[0m10:36:09.033056 [info ] [MainThread]: Using dbt_project.yml file at /opt/airflow/dags/flights_warehouse_pipeline/pacflight_dbt/dbt_project.yml
+[0m10:36:09.116253 [info ] [MainThread]: Configuration:
+[0m10:36:09.117226 [info ] [MainThread]:   profiles.yml file [[31mERROR not found[0m]
+[0m10:36:09.118179 [info ] [MainThread]:   dbt_project.yml file [[32mOK found and valid[0m]
+[0m10:36:09.118911 [info ] [MainThread]: Required dependencies:
+[0m10:36:09.119881 [debug] [MainThread]: Executing "git --help"
+[0m10:36:09.121465 [info ] [MainThread]:  - git [[31mERROR[0m]
+
+[0m10:36:09.122110 [info ] [MainThread]: Connection test skipped since no profile was found
+[0m10:36:09.122945 [info ] [MainThread]: [31m2 checks failed:[0m
+[0m10:36:09.123620 [info ] [MainThread]: dbt looked for a profiles.yml file in ./profiles.yml, but did
+not find one. For more information on configuring your profile, consult the
+documentation:
+
+https://docs.getdbt.com/docs/configure-your-profile
+
+
+[0m10:36:09.124243 [info ] [MainThread]: Error from git --help: User does not have permissions for this command: "git"
+
+[0m10:36:09.125507 [debug] [MainThread]: Resource report: {"command_name": "debug", "command_wall_clock_time": 0.18951361, "process_user_time": 1.937513, "process_kernel_time": 0.421634, "process_mem_max_rss": "103688", "process_in_blocks": "8984", "command_success": false, "process_out_blocks": "0"}
+[0m10:36:09.126408 [debug] [MainThread]: Command `dbt debug` failed at 10:36:09.126300 after 0.19 seconds
+[0m10:36:09.126993 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b019c1b20>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b0255f470>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x7f4b04ec7050>]}
+[0m10:36:09.127495 [debug] [MainThread]: Flushing usage events

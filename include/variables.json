@@ -1,5 +1,5 @@
 {
-    "incremental": "True",
+    "incremental": "False",
     "tables_to_extract": [
         "aircrafts_data",
         "airports_data",

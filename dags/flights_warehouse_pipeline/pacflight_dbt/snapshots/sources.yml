@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: stg
+    database: warehouse_pacflight
+    schema: stg
+    tables:
+      - name: aircrafts_data
+      - name: airports_data
+      - name: bookings
+      - name: tickets
+      - name: seats
+      - name: flights
+      - name: ticket_flights
+      - name: boarding_passes

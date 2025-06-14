@@ -1,14 +1,11 @@
 FROM apache/airflow:2.10.2
-
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends git wget
-
 COPY requirements.txt /requirements.txt
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
-
-USER airflow
-
 RUN pip install --no-cache-dir -r /requirements.txt
 
-ENTRYPOINT ["/bin/bash", "/start.sh"]
+# install cosmos module
+RUN pip install 'astronomer-cosmos[dbt.postgres]'
+
+# prepare dbt virtual environment
+COPY dbt-requirements.txt ./
+RUN python -m virtualenv dbt_venv && source dbt_venv/bin/activate && \
+    pip install --no-cache-dir -r dbt-requirements.txt && deactivate

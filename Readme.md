@@ -14,9 +14,9 @@
 
 
 ## Overview
-This project builds an orchestrated data pipeline for a flight booking system using Apache Airflow. It extracts data from a source PostgreSQL DB, stores it in MinIO, loads it into a warehouse, and transforms it into analytical tables.
+This project builds an orchestrated data pipeline for a flight booking system using Apache Airflow. It extracts data from a source PostgreSQL DB, stores it in MinIO, loads it into a warehouse.
 
-This version is improvements that supports incremental data loading, Jinja templating, XComs communication, Slack alerting, dynamic task creation, and modular configuration using CLI.
+This version is improvements that supports incremental data loading, Jinja templating, XComs communication, Slack alerting, dynamic task creation, DBT transformations, modular configuration using CLI and powered by Apache  Airflow using CeleryExecutor.
 
 ### Improvement Pipeline Features
 
@@ -29,6 +29,9 @@ This version is improvements that supports incremental data loading, Jinja templ
 | Skip Exceptions          | Gracefully skip load if CSV file is empty                          |
 | Slack Notifier           | Notifies a Slack channel on task failure                           |
 | CLI Config for Variables | Load `variables.json` and `connections.yaml` using Airflow CLI     |
+| TriggerDagRunOperator    | Used to trigger dependent DAGs (e.g., `flights_warehouse_pipeline`)        |
+| DBT Transformation       | Leverages DBT models for transforming staging into dimensional/fact tables |
+| Celery Executor          | Scalable parallel task processing                                          |
 
 ---
 
@@ -37,59 +40,98 @@ This version is improvements that supports incremental data loading, Jinja templ
 
 - **Source DB**: PostgreSQL (`bookings` schema)
 - **Data Lake**: MinIO (`extracted-data` bucket)
-- **Data Warehouse**: PostgreSQL (`warehouse` schema)
+- **Data Warehouse**: PostgreSQL (`staging` schema)
+- **Data Transformations**: DBT (`warehouse` schema)
 - **Orchestrator**: Apache Airflow
 - **Notifier**: Slack Webhook on task failure 
 - **Docker**: All services are containerized using Docker Compose
 
 ```text
-[PostgreSQL (bookings)] → Extract → [MinIO: extracted-data/] → Load → [PostgreSQL: stg schema] → Transform → [PostgreSQL: warehouse (dim_*, fct_*)]
+[PostgreSQL (bookings)]
+  └→ Extract (Airflow)
+      └→ [MinIO: extracted-data/]
+          └→ Load (Upsert)
+              └→ [PostgreSQL: stg schema]
+                  └→ TriggerDagRunOperator
+                      └→ [DBT Transformation DAG]
+                          └→ [warehouse (dim_*, fct_*)]
 ````
 
-![ELT DAG](docs/elt_dag.png)
+<!-- ![ELT DAG](docs/elt_dag.png) -->
 
 ---
 
 ## Pipeline Flow
 
-| Step | Process       | Tool             | Description                                                   |
-| ---- | ------------- | ---------------- | ------------------------------------------------------------- |
-| 1    | **Extract**   | Python + Airflow | Pulls data from PostgreSQL and stores CSV files in MinIO      |
-| 2    | **Load**      | SQL + Airflow    | Reads from MinIO and loads into `stg` schema (full load)      |
-| 3    | **Transform** | SQL + Airflow    | Converts staging data into warehouse `dim_` and `fct_` tables |
+| Step | Process     | Tool              | Description                                               |
+| ---- | ----------- | ----------------- | --------------------------------------------------------- |
+| 1    | Extract     | Python + Airflow  | Export from source DB to MinIO as CSV                     |
+| 2    | Load        | Airflow + Pangres | Load into staging schema with upsert strategy             |
+| 3    | Trigger DAG | Airflow           | Triggers `flights_warehouse_pipeline` using TriggerDagRun |
+| 4    | Transform   | DBT + Airflow     | Runs DBT models to build dimensional and fact tables      |
 
 ---
 
 ## Project Structure
 
 ```bash
-flights-data-pipeline/
-│
+airflow-dbt-flightdata/
 ├── dags/
-│   └── flights_data_pipeline/
-│       ├── tasks/
-│       │   ├── extract.py
-│       │   └── load.py
-│       │   └── transform.py
-│       └── query/final/            ← transformation SQL for data warehouse
-│
+│   ├── flights_staging_pipeline/
+│   │   ├── tasks/
+│   │   │   ├── components/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── extract.py
+│   │   │   │   ├── load.py
+│   │   │   │   └── transform.py
+│   │   │   ├── __init__.py
+│   │   │   ├── main.py
+│   │   │   └── run.py
+│   ├── flights_warehouse_pipeline/
+│   │   ├── flight_dbt/
+│   │   │   ├── logs/
+│   │   │   │   └── dbt.log
+│   │   │   ├── macros/
+│   │   │   ├── models/
+│   │   │   ├── seeds/
+│   │   │   │   ├── dim_date.csv
+│   │   │   │   └── dim_time.csv
+│   │   │   ├── snapshots/
+│   │   │   │   ├── dim_aircrafts.sql
+│   │   │   │   ├── dim_airport.sql
+│   │   │   │   ├── dim_passenger.sql
+│   │   │   │   ├── dim_seat.sql
+│   │   │   │   ├── fct_boarding_pass.sql
+│   │   │   │   ├── fct_booking_ticket.sql
+│   │   │   │   ├── fct_flight_activity.sql
+│   │   │   │   └── fct_seat_occupied_daily.sql
+│   │   │   └── sources.yml
+│   │   ├── dbt_project.yml
+│   │   └── __init__.py
 ├── helper/
-│   └── minio.py
+│   ├── __pycache__/
+│   ├── callback.py
+│   ├── __init__.py
+│   ├── minio.py
 │   └── postgres.py
-│
-├── docs/                     ← Screenshots
-│   ├── elt_dag.png
-│   ├── extract_group.png
-│   ├── load_group.png
-│   ├── transform_group.png
-│   ├── list_dag_available.png
-│   ├── list_task_dag.png
-│   ├── example_query_from_final_dwh.png
-│   └── slack_notifications.png
-│
-├── .env                      ← Environment variables
+├── data/
+│   ├── source/
+│   │   └── init.sql
+│   └── warehouse/
+│       ├── init.sql
+│       └── dtg_schema.sql
+├── docs/
+├── include/
+├── logs/
+├── plugins/
+├── .env
+├── .gitignore
+├── .python-version
 ├── docker-compose.yml
-└── README.md
+├── Dockerfile
+├── fernet.py
+├── README.md
+└── requirements.txt
 ```
 
 ---
@@ -127,26 +169,27 @@ docker-compose up --build
 Create a `.env` file in the root project with the following keys:
 
 ```env
-# Airflow internal config
-AIRFLOW_FERNET_KEY=    # Run fernet.py to generate this (see below)
-AIRFLOW_DB_URI=postgresql+psycopg2://airflow:airflow@airflow_metadata/airflow
-AIRFLOW_DB_USER=airflow
-AIRFLOW_DB_PASSWORD=airflow
-AIRFLOW_DB_NAME=airflow
+# Airflow config
+AIRFLOW_UID=50000
+AIRFLOW_FERNET_KEY=your_fernet_key
+AIRFLOW_WEBSERVER_SECRET_KEY=your_webserver_key
+AIRFLOW_DB_URI=postgresql+psycopg2://airflow:airflow@airflow-metadata-6/airflow
+AIRFLOW_CELERY_RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-metadata-6/airflow
+AIRFLOW_CELERY_BROKER_URL=redis://:@redis:6379/0
 
 # Warehouse (staging and dimensional)
-WAREHOUSE_DB_USER=postgres
-WAREHOUSE_DB_PASSWORD=postgres
+WAREHOUSE_DB_USER=...
+WAREHOUSE_DB_PASSWORD=...
 WAREHOUSE_DB_NAME=warehouse_pacflight
 
 # Source DB (bookings)
-PACFLIGHT_DB_USER=postgres
-PACFLIGHT_DB_PASSWORD=postgres
+PACFLIGHT_DB_USER=...
+PACFLIGHT_DB_PASSWORD=...
 PACFLIGHT_DB_NAME=pacflight
 
 # MinIO
-MINIO_ROOT_USER=minio
-MINIO_ROOT_PASSWORD=minio123
+MINIO_ROOT_USER=...
+MINIO_ROOT_PASSWORD=...
 ```
 
 ### Generate Fernet Key for Airflow
@@ -198,7 +241,8 @@ To receive task failure notifications in Slack:
 
 ### 1. DAG Overview
 
-![DAG Screenshot](docs/elt_dag.png)
+![DAG Staging](docs/flight_staging_pipeline.png)
+![DAG Warehouse](docs/flight_warehouse_pipeline.png)
 
 ### 2. Task Groups
 
@@ -210,28 +254,18 @@ To receive task failure notifications in Slack:
 | ---------------------------------------- |
 | ![Load Group](docs/load_group.png) | 
 
-| Transform                                  |
+| DBT Transform                                  |
 | ---------------------------------------- |
 | ![Transform Group](docs/transform_group.png) |
 
-### 3. DAG & Task List
-
-| Available DAGs                           |
-| ---------------------------------------- |
-| ![List DAG](docs/list_dag_available.png) | 
-
-| Task List (Example skip exceptions)   |
-| ------------------------------------- |
-| ![List Tasks](docs/list_task_dag.png) |
-
-### 4. Querying Final Warehouse
+### 3. Querying Final Warehouse
 
 ![Query Sample](docs/example_query_from_final_dwh.png)
 
-### 5. Slack Notifications
+### 4. Slack Notifications
 
 ![Slack Notifications](docs/slack_notifications.png)
 
-### 6. Xcoms
+### 5. Xcoms
 
 ![Xcoms](docs/xcoms.png)
