@@ -7,8 +7,8 @@
 2. [Architecture](#architecture)  
 3. [Pipeline Flow](#pipeline-flow)  
 4. [Project Structure](#project-structure)  
-5. [How to Run the Pipeline](#how-to-run-the-pipeline)  
-6. [Environment Setup](#environment-setup)  
+5. [Environment Setup](#environment-setup)  
+6. [How to Run the Pipeline](#how-to-run-the-pipeline)  
 7. [Screenshots](#screenshots)  
 
 
@@ -16,7 +16,7 @@
 ## Overview
 This project builds an orchestrated data pipeline for a flight booking system using Apache Airflow. It extracts data from a source PostgreSQL DB, stores it in MinIO, loads it into a warehouse.
 
-This version is improvements that supports incremental data loading, Jinja templating, XComs communication, Slack alerting, dynamic task creation, DBT transformations, modular configuration using CLI and powered by Apache  Airflow using CeleryExecutor.
+This version contains improvements compared to the [previous repository version](https://github.com/hudiyaresa/airflow-incremental-flightdata) ([airflow-incremental-flightdata](https://github.com/hudiyaresa/airflow-incremental-flightdata)), that supports incremental data loading, Jinja templating, XComs communication, Slack alerting, dynamic task creation, DBT transformations, modular configuration using CLI and powered by Apache  Airflow using CeleryExecutor.
 
 ### Improvement Pipeline Features
 
@@ -26,9 +26,9 @@ This version is improvements that supports incremental data loading, Jinja templ
 | Jinja Templating         | Dynamic query generation using Airflow’s `{{ ds }}` execution date |
 | XComs                    | Pass file metadata from Extract → Load                             |
 | Pangres Upsert           | UPSERT data using `pangres` with conflict handling                 |
-| Skip Exceptions          | Gracefully skip load if CSV file is empty                          |
+| Skip Exceptions          | Skip load if data is empty                                         |
 | Slack Notifier           | Notifies a Slack channel on task failure                           |
-| CLI Config for Variables | Load `variables.json` and `connections.yaml` using Airflow CLI     |
+| CLI Config for Variables | Load `variables.json` and `connections.yaml` using Airflow CLI (start.sh)    |
 | TriggerDagRunOperator    | Used to trigger dependent DAGs (e.g., `flights_warehouse_pipeline`)        |
 | DBT Transformation       | Leverages DBT models for transforming staging into dimensional/fact tables |
 | Celery Executor          | Scalable parallel task processing                                          |
@@ -46,22 +46,11 @@ This version is improvements that supports incremental data loading, Jinja templ
 - **Notifier**: Slack Webhook on task failure 
 - **Docker**: All services are containerized using Docker Compose
 
-```text
-[PostgreSQL (bookings)]
-  └→ Extract (Airflow)
-      └→ [MinIO: extracted-data/]
-          └→ Load (Upsert)
-              └→ [PostgreSQL: stg schema]
-                  └→ TriggerDagRunOperator
-                      └→ [DBT Transformation DAG]
-                          └→ [warehouse (dim_*, fct_*)]
-````
-
-<!-- ![ELT DAG](docs/elt_dag.png) -->
-
 ---
 
 ## Pipeline Flow
+
+![ELT DAG](docs/elt_dag.png)
 
 | Step | Process     | Tool              | Description                                               |
 | ---- | ----------- | ----------------- | --------------------------------------------------------- |
@@ -78,89 +67,23 @@ This version is improvements that supports incremental data loading, Jinja templ
 airflow-dbt-flightdata/
 ├── dags/
 │   ├── flights_staging_pipeline/
-│   │   ├── tasks/
-│   │   │   ├── components/
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── extract.py
-│   │   │   │   ├── load.py
-│   │   │   │   └── transform.py
-│   │   │   ├── __init__.py
-│   │   │   ├── main.py
-│   │   │   └── run.py
+│   │   ├── tasks/components/ [extract.py, load.py, transform.py]
+│   │   ├── main.py
+│   │   └── run.py
 │   ├── flights_warehouse_pipeline/
-│   │   ├── flight_dbt/
-│   │   │   ├── logs/
-│   │   │   │   └── dbt.log
-│   │   │   ├── macros/
-│   │   │   ├── models/
-│   │   │   ├── seeds/
-│   │   │   │   ├── dim_date.csv
-│   │   │   │   └── dim_time.csv
-│   │   │   ├── snapshots/
-│   │   │   │   ├── dim_aircrafts.sql
-│   │   │   │   ├── dim_airport.sql
-│   │   │   │   ├── dim_passenger.sql
-│   │   │   │   ├── dim_seat.sql
-│   │   │   │   ├── fct_boarding_pass.sql
-│   │   │   │   ├── fct_booking_ticket.sql
-│   │   │   │   ├── fct_flight_activity.sql
-│   │   │   │   └── fct_seat_occupied_daily.sql
-│   │   │   └── sources.yml
-│   │   ├── dbt_project.yml
-│   │   └── __init__.py
-├── helper/
-│   ├── __pycache__/
-│   ├── callback.py
-│   ├── __init__.py
-│   ├── minio.py
-│   └── postgres.py
-├── data/
-│   ├── source/
-│   │   └── init.sql
-│   └── warehouse/
-│       ├── init.sql
-│       └── dtg_schema.sql
+│   │   ├── flight_dbt/ [models, logs, macros, seeds, snapshots, sources.yml]
+│   │   └── dbt_project.yml
+├── helper/ [minio.py, postgres.py, callback.py]
+├── data/ [source/init.sql, warehouse/init.sql]
 ├── docs/
-├── include/
+├── include/ [connections.yaml, variables.json]
 ├── logs/
 ├── plugins/
 ├── .env
-├── .gitignore
-├── .python-version
-├── docker-compose.yml
-├── Dockerfile
+├── start.sh
 ├── fernet.py
-├── README.md
-└── requirements.txt
+├── requirements.txt
 ```
-
----
-
-
-## How to Run the Pipeline
-
-Clone and enter project
-```bash
-git clone https://github.com/hudiyaresa/airflow-incremental-flightdata.git
-```
-
-```bash
-cd flights-data-pipeline
-```
-
-Start services
-```bash
-docker-compose up --build
-```
-
-### Access UI
-
-| Service       | URL                                            |
-| ------------- | ---------------------------------------------- |
-| Airflow UI    | [http://localhost:8080](http://localhost:8080) |
-| MinIO Browser | [http://localhost:9001](http://localhost:9001) |
-| Postgres DB   | localhost:5432 (e.g., via DBeaver or pgAdmin)  |
-
 
 ---
 
@@ -204,26 +127,6 @@ Then copy it into your `.env`:
 AIRFLOW_FERNET_KEY=your_generated_fernet_key
 ```
 
-## Load Variables and Connections via CLI
-
-```bash
-docker exec -it airflow_standalone bash
-```
-
-### Import Airflow Variables
-
-```bash
-airflow variables import include/variables.json
-```
-
-### Import Airflow Connections
-
-```bash
-airflow connections import include/connections.yaml
-```
-
-make sure to set you credentials in connections (password, secret key, etc)
-
 
 ### Slack Notification Setup
 
@@ -232,6 +135,51 @@ To receive task failure notifications in Slack:
 1. Create a Slack webhook via Slack App → Incoming Webhooks
 2. Add the webhook URL into your `password` as `HTTP` connections
 3. Ensure your DAG uses Slack alert logic in its failure callbacks
+
+
+---
+
+
+
+## How to Run the Pipeline
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/hudiyaresa/airflow-incremental-flightdata.git
+```
+
+```bash
+cd flights-data-pipeline
+```
+
+### 2. Start All Services with One Comm and
+
+Make sure you already setup the .env and credentials in connections (password, secret key, etc), using WSL you can just start this script
+
+```bash
+chmod +x start.sh
+```
+
+```bash
+./start.sh
+```
+
+> This will:
+>
+> * Start Airflow (CeleryExecutor), Source DB, Warehouse DB, and MinIO
+> * Load all Airflow Variables and Connections via CLI
+> * Wait for services to be ready before initialization
+
+---
+
+### Access UI
+
+| Service       | URL                                            |
+| ------------- | ---------------------------------------------- |
+| Airflow UI    | [http://localhost:8080](http://localhost:8080) |
+| MinIO Browser | [http://localhost:9001](http://localhost:9001) |
+| Postgres DB   | localhost:5432 (e.g., via DBeaver or pgAdmin)  |
 
 
 ---
