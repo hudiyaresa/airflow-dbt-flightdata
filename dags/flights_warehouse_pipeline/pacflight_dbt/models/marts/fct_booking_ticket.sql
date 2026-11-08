@@ -1,45 +1,3 @@
-{% snapshot fct_booking_ticket %}
-
-{{
-    config(
-      target_database='warehouse_pacflight',
-      target_schema='final',
-      unique_key=('book_nk', 'ticket_no', 'flight_nk'),
-      strategy='check',
-      check_cols=[
-        'book_date_local',
-        'book_date_utc',
-        'book_time_local',
-        'book_time_utc',
-        'total_amount',
-        'passenger_id',
-        'fare_conditions',
-        'amount',
-        'flight_no',
-        'scheduled_departure_date_local',
-        'scheduled_departure_date_utc',
-        'scheduled_departure_time_local',
-        'scheduled_departure_time_utc',
-        'scheduled_arrival_date_local',
-        'scheduled_arrival_date_utc',
-        'scheduled_arrival_time_local',
-        'scheduled_arrival_time_utc',
-        'departure_airport',
-        'arrival_airport',
-        'status',
-        'aircraft_code',
-        'actual_departure_date_local',
-        'actual_departure_date_utc',
-        'actual_departure_time_local',
-        'actual_departure_time_utc',
-        'actual_arrival_date_local',
-        'actual_arrival_date_utc',
-        'actual_arrival_time_local',
-        'actual_arrival_time_utc'
-      ]
-    )
-}}
-
 WITH stg_fct_booking_ticket AS (
 
     SELECT
@@ -84,7 +42,7 @@ WITH stg_fct_booking_ticket AS (
     JOIN {{ ref('dim_time') }} dt2 ON dt2.time_actual::time = (sb.book_date AT TIME ZONE 'UTC')::time
     
     JOIN {{ source('stg', 'tickets') }} st ON st.book_ref = sb.book_ref
-    JOIN {{ ref('dim_passenger') }} dp ON dp.passenger_nk = st.passenger_id
+    JOIN {{ ref('dim_passenger') }} dp ON dp.passenger_nk = st.passenger_id AND dp.dbt_valid_to IS NULL
     JOIN {{ source('stg', 'ticket_flights') }} stf ON stf.ticket_no = st.ticket_no
     JOIN {{ source('stg', 'flights') }} sf ON sf.flight_id = stf.flight_id
     
@@ -98,9 +56,9 @@ WITH stg_fct_booking_ticket AS (
     JOIN {{ ref('dim_time') }} dt5 ON dt5.time_actual::time = (sf.scheduled_arrival)::time
     JOIN {{ ref('dim_time') }} dt6 ON dt6.time_actual::time = (sf.scheduled_arrival AT TIME ZONE 'UTC')::time
     
-    JOIN {{ ref('dim_airport') }} da1 ON da1.airport_nk = sf.departure_airport
-    JOIN {{ ref('dim_airport') }} da2 ON da2.airport_nk = sf.arrival_airport
-    JOIN {{ ref('dim_aircrafts') }} dac ON dac.aircraft_nk = sf.aircraft_code
+    JOIN {{ ref('dim_airport') }} da1 ON da1.airport_nk = sf.departure_airport AND da1.dbt_valid_to IS NULL
+    JOIN {{ ref('dim_airport') }} da2 ON da2.airport_nk = sf.arrival_airport AND da2.dbt_valid_to IS NULL
+    JOIN {{ ref('dim_aircrafts') }} dac ON dac.aircraft_nk = sf.aircraft_code AND dac.dbt_valid_to IS NULL
     
     JOIN {{ ref('dim_date') }} dd7 ON dd7.date_actual = DATE(sf.actual_departure)
     JOIN {{ ref('dim_date') }} dd8 ON dd8.date_actual = DATE(sf.actual_departure AT TIME ZONE 'UTC')
@@ -115,5 +73,3 @@ WITH stg_fct_booking_ticket AS (
 )
 
 SELECT * FROM stg_fct_booking_ticket
-
-{% endsnapshot %}
