@@ -4,12 +4,37 @@ sources:
   - name: stg
     database: warehouse_pacflight
     schema: stg
+    description: Raw Pacflight tables upserted by flights_staging_pipeline.
     tables:
       - name: aircrafts_data
+        columns:
+          - name: aircraft_code
+            data_tests: [unique, not_null]
       - name: airports_data
+        columns:
+          - name: airport_code
+            data_tests: [unique, not_null]
       - name: bookings
+        columns:
+          - name: book_ref
+            data_tests: [unique, not_null]
       - name: tickets
+        columns:
+          - name: ticket_no
+            data_tests: [unique, not_null]
       - name: seats
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [aircraft_code, seat_no]
       - name: flights
+        columns:
+          - name: flight_id
+            data_tests: [unique, not_null]
       - name: ticket_flights
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [ticket_no, flight_id]
       - name: boarding_passes
+        data_tests:
+          - dbt_utils.unique_combination_of_columns:
+              combination_of_columns: [ticket_no, flight_id]
