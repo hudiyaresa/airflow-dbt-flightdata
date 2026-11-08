@@ -23,6 +23,7 @@ WITH stg_dim_seats AS (
     FROM {{ source("stg", "seats") }} s
     JOIN {{ ref("dim_aircrafts") }} da
         ON da.aircraft_nk = s.aircraft_code
+        AND da.dbt_valid_to IS NULL
 )
 
 SELECT
