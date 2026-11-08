@@ -1,0 +1,45 @@
+version: 2
+
+# Keys must be unique among current rows only, older versions keep the same key
+snapshots:
+  - name: dim_aircrafts
+    description: SCD2 aircraft dimension.
+    columns:
+      - name: aircraft_id
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: dbt_valid_to IS NULL
+  - name: dim_airport
+    description: SCD2 airport dimension, city name in English.
+    columns:
+      - name: airport_id
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: dbt_valid_to IS NULL
+  - name: dim_passenger
+    description: SCD2 passenger dimension with contact data.
+    columns:
+      - name: passenger_id
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: dbt_valid_to IS NULL
+  - name: dim_seat
+    description: SCD2 seat dimension per aircraft.
+    columns:
+      - name: seat_id
+        data_tests:
+          - not_null
+          - unique:
+              config:
+                where: dbt_valid_to IS NULL
+      - name: aircraft_id
+        data_tests:
+          - relationships:
+              to: ref('dim_aircrafts')
+              field: aircraft_id
