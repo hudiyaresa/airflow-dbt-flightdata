@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_VERSION: "2.10.2"
+      PYTHON_VERSION: "3.10"
+      DBT_PROJECT_DIR: dags/flights_warehouse_pipeline/pacflight_dbt
+      # Cosmos needs dbt and a warehouse connection to render the dbt DAG, no database is contacted
+      DBT_EXECUTABLE_PATH: ${{ github.workspace }}/dbt_venv/bin/dbt
+      AIRFLOW_CONN_WAREHOUSE_PACFLIGHT: postgresql://ci:ci@localhost:5432/warehouse_pacflight
+      AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: "300"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Airflow and project dependencies
+        run: |
+          CONSTRAINTS="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+          pip install "apache-airflow==${AIRFLOW_VERSION}" -r requirements.txt -r requirements-dev.txt --constraint "$CONSTRAINTS"
+
+      - name: Install dbt in its own virtualenv
+        run: |
+          python -m venv dbt_venv
+          dbt_venv/bin/pip install -r dbt-requirements.txt
+
+      - name: Lint
+        run: ruff check dags tests
+
+      - name: dbt deps and parse
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<'YAML'
+          warehouse:
+            target: warehouse
+            outputs:
+              warehouse:
+                type: postgres
+                host: localhost
+                user: ci
+                password: ci
+                port: 5432
+                dbname: warehouse_pacflight
+                schema: final
+                threads: 1
+          YAML
+          cd "$DBT_PROJECT_DIR"
+          ../../../dbt_venv/bin/dbt deps
+          ../../../dbt_venv/bin/dbt parse
+
+      - name: Init Airflow metadata DB
+        run: airflow db migrate
+
+      - name: Run tests
+        run: pytest -v
