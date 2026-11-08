@@ -1,24 +1,3 @@
-{% snapshot fct_seat_occupied_daily %}
-
-{{
-    config(
-      target_database='warehouse_pacflight',
-      target_schema='final',
-      unique_key=('date_flight', 'flight_nk'),
-      strategy='check',
-      check_cols=[
-        'flight_no',
-        'departure_airport',
-        'arrival_airport',
-        'aircraft_code',
-        'status',
-        'total_seat',
-        'seat_occupied',
-        'empty_seats'
-      ]
-    )
-}}
-
 WITH 
     stg_flights AS (
         SELECT * FROM {{ source('stg', 'flights') }}
@@ -27,10 +6,10 @@ WITH
         SELECT * FROM {{ ref('dim_date') }}
     ),
     dim_airports AS (
-        SELECT * FROM {{ ref('dim_airport') }}
+        SELECT * FROM {{ ref('dim_airport') }} WHERE dbt_valid_to IS NULL
     ),
     dim_aircrafts AS (
-        SELECT * FROM {{ ref('dim_aircrafts') }}
+        SELECT * FROM {{ ref('dim_aircrafts') }} WHERE dbt_valid_to IS NULL
     ),
     stg_boarding_passes AS (
         SELECT * FROM {{ source('stg', 'boarding_passes') }}
@@ -72,13 +51,11 @@ WITH
             (cts.total_seat - cso.seat_occupied) AS empty_seats
         FROM {{ source('stg', 'flights') }} sf
         JOIN {{ ref('dim_date') }} dd ON dd.date_actual = DATE(sf.actual_departure)
-        JOIN {{ ref('dim_airport') }} da1 ON da1.airport_nk = sf.departure_airport
-        JOIN {{ ref('dim_airport') }} da2 ON da2.airport_nk = sf.arrival_airport
-        JOIN {{ ref('dim_aircrafts') }} dac ON dac.aircraft_nk = sf.aircraft_code
+        JOIN {{ ref('dim_airport') }} da1 ON da1.airport_nk = sf.departure_airport AND da1.dbt_valid_to IS NULL
+        JOIN {{ ref('dim_airport') }} da2 ON da2.airport_nk = sf.arrival_airport AND da2.dbt_valid_to IS NULL
+        JOIN {{ ref('dim_aircrafts') }} dac ON dac.aircraft_nk = sf.aircraft_code AND dac.dbt_valid_to IS NULL
         JOIN cnt_seat_occupied cso ON cso.flight_id = sf.flight_id
         JOIN cnt_total_seats cts ON cts.aircraft_code = sf.aircraft_code
     )
 
 SELECT * FROM final_fct_seat_occupied_daily
-
-{% endsnapshot %}
