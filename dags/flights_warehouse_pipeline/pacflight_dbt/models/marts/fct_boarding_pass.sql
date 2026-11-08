@@ -1,39 +1,9 @@
-{% snapshot fct_boarding_pass %}
-
-{{
-    config(
-      target_database='warehouse_pacflight',
-      target_schema='final',
-      unique_key=('ticket_no', 'flight_id', 'boarding_no'),
-      strategy='check',
-      check_cols=[
-        'book_ref',
-        'passenger_id',
-        'flight_no',
-        'scheduled_departure_date_local',
-        'scheduled_departure_date_utc',
-        'scheduled_departure_time_local',
-        'scheduled_departure_time_utc',
-        'scheduled_arrival_date_local',
-        'scheduled_arrival_date_utc',
-        'scheduled_arrival_time_local',
-        'scheduled_arrival_time_utc',
-        'departure_airport',
-        'arrival_airport',
-        'aircraft_code',
-        'status',
-        'fare_conditions',
-        'seat_no'
-      ]
-    )
-}}
-
 WITH 
     stg_tickets AS (
         SELECT * FROM {{ source('stg', 'tickets') }}
     ),
     dim_passengers AS (
-        SELECT * FROM {{ ref('dim_passenger') }}
+        SELECT * FROM {{ ref('dim_passenger') }} WHERE dbt_valid_to IS NULL
     ),
     stg_ticket_flights AS (
         SELECT * FROM {{ source('stg', 'ticket_flights') }}
@@ -48,10 +18,10 @@ WITH
         SELECT * FROM {{ ref('dim_time') }}
     ),
     dim_airports AS (
-        SELECT * FROM {{ ref('dim_airport') }}
+        SELECT * FROM {{ ref('dim_airport') }} WHERE dbt_valid_to IS NULL
     ),
     dim_aircrafts AS (
-        SELECT * FROM {{ ref('dim_aircrafts') }}
+        SELECT * FROM {{ ref('dim_aircrafts') }} WHERE dbt_valid_to IS NULL
     ),
     stg_boarding_passes AS (
         SELECT * FROM {{ source('stg', 'boarding_passes') }}
@@ -98,5 +68,3 @@ WITH
     )
 
 SELECT * FROM final_fct_boarding_pass
-
-{% endsnapshot %}
