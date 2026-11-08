@@ -11,7 +11,7 @@ jobs:
     env:
       AIRFLOW_VERSION: "2.10.2"
       PYTHON_VERSION: "3.10"
-      DBT_PROJECT_DIR: dags/flights_warehouse_pipeline/pacflight_dbt
+      DBT_DIR: dags/flights_warehouse_pipeline/pacflight_dbt
       # Cosmos needs dbt and a warehouse connection to render the dbt DAG, no database is contacted
       DBT_EXECUTABLE_PATH: ${{ github.workspace }}/dbt_venv/bin/dbt
       AIRFLOW_CONN_WAREHOUSE_PACFLIGHT: postgresql://ci:ci@localhost:5432/warehouse_pacflight
@@ -54,7 +54,7 @@ jobs:
                 schema: final
                 threads: 1
           YAML
-          cd "$DBT_PROJECT_DIR"
+          cd "$DBT_DIR"
           ../../../dbt_venv/bin/dbt deps
           ../../../dbt_venv/bin/dbt parse
 
