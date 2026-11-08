@@ -1,14 +1,18 @@
-from datetime import datetime
-from airflow.datasets import Dataset
-from helper.callbacks.slack_notifier import slack_notifier
-
-from cosmos.config import ProjectConfig, ProfileConfig, RenderConfig
-from cosmos.profiles.postgres import PostgresUserPasswordProfileMapping
-from cosmos import DbtDag
-
 import os
+from datetime import datetime, timedelta
+from pathlib import Path
 
-DBT_PROJECT_PATH = f"{os.environ['AIRFLOW_HOME']}/dags/flights_warehouse_pipeline/pacflight_dbt"
+from cosmos import DbtDag
+from cosmos.config import ExecutionConfig, ProfileConfig, ProjectConfig, RenderConfig
+from cosmos.constants import TestBehavior
+from cosmos.profiles.postgres import PostgresUserPasswordProfileMapping
+
+from helper.callbacks.slack_notifier import slack_notifier
+from helper.datasets import STG_DATASET
+
+DBT_PROJECT_PATH = Path(__file__).resolve().parent / "pacflight_dbt"
+# dbt runs from its own virtualenv built in the Dockerfile, CI points this somewhere else
+DBT_EXECUTABLE_PATH = os.getenv("DBT_EXECUTABLE_PATH", "/opt/airflow/dbt_venv/bin/dbt")
 
 project_config = ProjectConfig(
     dbt_project_path=DBT_PROJECT_PATH,
@@ -26,16 +30,24 @@ profile_config = ProfileConfig(
 
 dag = DbtDag(
     dag_id="flights_warehouse_pipeline",
-    schedule=None,
+    # Runs whenever flights_staging_pipeline finishes loading stg
+    schedule=[STG_DATASET],
     catchup=False,
-    start_date=datetime(2024, 1, 1),
+    max_active_runs=1,
+    start_date=datetime(2025, 1, 1),
     project_config=project_config,
     profile_config=profile_config,
+    execution_config=ExecutionConfig(dbt_executable_path=DBT_EXECUTABLE_PATH),
     render_config=RenderConfig(
-        dbt_executable_path="/opt/airflow/dbt_venv/bin",
+        test_behavior=TestBehavior.AFTER_EACH,
         emit_datasets=True
     ),
+    operator_args={"install_deps": True},
     default_args={
+        'owner': 'hudiyaresa',
+        'retries': 1,
+        'retry_delay': timedelta(minutes=3),
         'on_failure_callback': slack_notifier
-    }
+    },
+    tags=['pacflight', 'dbt']
 )
