@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: fct_flight_activity
+    description: One row per flight with scheduled and actual times, delays and travel time.
+    columns:
+      - name: flight_nk
+        data_tests: [unique, not_null]
+      - name: departure_airport
+        data_tests:
+          - relationships:
+              to: ref('dim_airport')
+              field: airport_id
+      - name: arrival_airport
+        data_tests:
+          - relationships:
+              to: ref('dim_airport')
+              field: airport_id
+      - name: aircraft_code
+        data_tests:
+          - relationships:
+              to: ref('dim_aircrafts')
+              field: aircraft_id
+
+  - name: fct_booking_ticket
+    description: One row per booked ticket and flight.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [book_nk, ticket_no, flight_nk]
+    columns:
+      - name: passenger_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_passenger')
+              field: passenger_id
+      - name: amount
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
+
+  - name: fct_boarding_pass
+    description: One row per boarding pass issued.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [ticket_no, flight_id]
+    columns:
+      - name: passenger_id
+        data_tests:
+          - relationships:
+              to: ref('dim_passenger')
+              field: passenger_id
+
+  - name: fct_seat_occupied_daily
+    description: Seat occupancy per arrived flight and day.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [date_flight, flight_nk]
+    columns:
+      - name: empty_seats
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 0
