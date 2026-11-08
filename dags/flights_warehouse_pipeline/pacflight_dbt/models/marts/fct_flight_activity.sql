@@ -1,40 +1,3 @@
-{% snapshot fct_flight_activity %}
-
-{{
-    config(
-      target_database='warehouse_pacflight',
-      target_schema='final',
-      unique_key='flight_nk',
-      strategy='check',
-      check_cols=[
-        'flight_no',
-        'scheduled_departure_date_local',
-        'scheduled_departure_date_utc',
-        'scheduled_departure_time_local',
-        'scheduled_departure_time_utc',
-        'scheduled_arrival_date_local',
-        'scheduled_arrival_date_utc',
-        'scheduled_arrival_time_local',
-        'scheduled_arrival_time_utc',
-        'departure_airport',
-        'arrival_airport',
-        'aircraft_code',
-        'actual_departure_date_local',
-        'actual_departure_date_utc',
-        'actual_departure_time_local',
-        'actual_departure_time_utc',
-        'actual_arrival_date_local',
-        'actual_arrival_date_utc',
-        'actual_arrival_time_local',
-        'actual_arrival_time_utc',
-        'status',
-        'delay_departure',
-        'delay_arrival',
-        'travel_time'
-      ]
-    )
-}}
-
 WITH 
     stg_flights AS (
         SELECT * FROM {{ source("stg", "flights") }}
@@ -46,10 +9,10 @@ WITH
         SELECT * FROM {{ ref("dim_date") }}
     ),
     dim_airports AS (
-        SELECT * FROM {{ ref("dim_airport") }}
+        SELECT * FROM {{ ref("dim_airport") }} WHERE dbt_valid_to IS NULL
     ),
     dim_aircrafts AS (
-        SELECT * FROM {{ ref("dim_aircrafts") }}
+        SELECT * FROM {{ ref("dim_aircrafts") }} WHERE dbt_valid_to IS NULL
     ),
     final_fct_flight_activities AS (
         SELECT 
@@ -101,5 +64,3 @@ WITH
     )
 
 SELECT * FROM final_fct_flight_activities
-
-{% endsnapshot %}
