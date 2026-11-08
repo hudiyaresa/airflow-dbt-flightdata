@@ -19,3 +19,9 @@ clean-targets:
     - "logs"
 
 require-dbt-version: [">=1.0.0", "<2.0.0"]
+
+# Dimensions are SCD2 snapshots in snapshots/, facts are rebuilt as tables on every run
+models:
+  warehouse_pacflight:
+    marts:
+      +materialized: table
