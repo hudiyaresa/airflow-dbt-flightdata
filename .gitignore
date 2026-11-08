@@ -1,4 +1,16 @@
-__pycache__
+__pycache__/
+*.pyc
 .env
 /data/source/init.sql
-*(2)*
+
+# dbt
+dags/flights_warehouse_pipeline/pacflight_dbt/target/
+dags/flights_warehouse_pipeline/pacflight_dbt/logs/
+dags/flights_warehouse_pipeline/pacflight_dbt/dbt_packages/
+logs/
+
+# local tooling
+.venv/
+dbt_venv/
+.pytest_cache/
+.ruff_cache/
