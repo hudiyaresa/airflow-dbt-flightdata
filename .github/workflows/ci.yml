@@ -62,4 +62,10 @@ jobs:
         run: airflow db migrate
 
       - name: Run tests
-        run: pytest -v
+        run: |
+          set +e
+          pytest -v -rfE --tb=short | tee pytest.log
+          status=${PIPESTATUS[0]}
+          # Surface the short failure summary as annotations so it is visible without opening the log
+          grep -E "^(FAILED|ERROR) " pytest.log | head -10 | sed 's/^/::error::/'
+          exit $status
