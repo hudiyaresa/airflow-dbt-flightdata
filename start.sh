@@ -1,32 +1,19 @@
 #!/bin/bash
-
-# Exit immediately if a command exits with a non-zero status
+# PacFlights: start every service, then import Airflow connections and variables.
 set -e
 
-# ------------------------------------------
-# PacFlights Data Pipeline: Startup Script
-# ------------------------------------------
+if [ ! -f .env ]; then
+  echo "Missing .env. Copy .env.example to .env and fill in the values first."
+  exit 1
+fi
 
-echo "Stopping any existing containers..."
-docker compose -f ./setups/airflow/docker-compose.yaml down -v
-docker compose -f ./setups/data_sources/docker-compose.yaml down -v
-docker compose -f ./setups/data_warehouse/docker-compose.yaml down -v
-docker compose -f ./setups/minio/docker-compose.yaml down -v
+echo "Building and starting all services..."
+docker compose up --build -d
 
-echo "Starting Airflow services..."
-docker compose -f ./setups/airflow/docker-compose.yaml up --build -d
-
-echo "Starting source database services..."
-docker compose -f ./setups/data_sources/docker-compose.yaml up --build -d
-
-echo "Starting data warehouse services..."
-docker compose -f ./setups/data_warehouse/docker-compose.yaml up --build -d
-
-echo "Starting MinIO services..."
-docker compose -f ./setups/minio/docker-compose.yaml up --build -d
-
-echo "Waiting for Airflow and dependencies to fully start (sleeping 50s)..."
-sleep 50
+echo "Waiting for the Airflow webserver to become healthy..."
+until [ "$(docker inspect -f '{{.State.Health.Status}}' airflow-webserver 2>/dev/null)" = "healthy" ]; do
+  sleep 5
+done
 
 echo "Importing Airflow connections from include/connections.yaml..."
 docker exec -i airflow-webserver airflow connections import include/connections.yaml
@@ -34,4 +21,4 @@ docker exec -i airflow-webserver airflow connections import include/connections.
 echo "Importing Airflow variables from include/variables.json..."
 docker exec -i airflow-webserver airflow variables import -a overwrite include/variables.json
 
-echo "Startup complete. Access the Airflow UI at http://localhost:8080"
+echo "Startup complete. Airflow UI: http://localhost:8080"
