@@ -42,7 +42,7 @@ def test_staging_no_longer_triggers_warehouse_directly(dag_bag):
 def test_warehouse_is_scheduled_by_staging_dataset(dag_bag):
     dag = dag_bag.get_dag("flights_warehouse_pipeline")
     assert isinstance(dag.timetable, DatasetTriggeredTimetable)
-    assert STG_DATASET.uri in {d.uri for d in dag.dataset_triggers.objects}
+    assert STG_DATASET.uri in {uri for uri, _ in dag.timetable.dataset_condition.iter_datasets()}
 
 
 def test_warehouse_runs_dbt_tests(dag_bag):
